@@ -1,0 +1,110 @@
+-
+  name: Install Nginx, Docker, Git, Apply Security Updates, Deploy Website, and Configure SSL
+  hosts: servers
+  become: yes
+  vars:
+    ssl_cert_path: /etc/ssl/certs
+    ssl_key_path: /etc/ssl/private
+    ssl_days: 365
+
+  tasks:
+    - name: Get the public IP address
+      uri:
+        url: http://api.ipify.org
+        return_content: yes
+      register: public_ip
+
+    - set_fact:
+        ssl_ip: "{{ public_ip.content }}"
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: latest
+
+    - name: Start Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: latest
+
+    - name: Start Docker Service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install Git
+      apt:
+        name: git
+        state: latest
+
+    - name: Apply security updates automatically
+      apt:
+        upgrade: dist
+        update_cache: yes
+        state: latest
+
+    - name: Deploy website
+      copy:
+        src: index.html
+        dest: /var/www/html/index.html
+
+    # SSL Configuration Tasks
+    - name: Create SSL certificate directory
+      file:
+        path: "{{ ssl_cert_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create SSL private key directory
+      file:
+        path: "{{ ssl_key_path }}"
+        state: directory
+        mode: '0700'
+
+    - name: Generate a self-signed SSL certificate for the server IP
+      command: >
+        openssl req -x509 -nodes -days {{ ssl_days }} -newkey rsa:2048
+        -keyout {{ ssl_key_path }}/{{ ssl_ip }}.key
+        -out {{ ssl_cert_path }}/{{ ssl_ip }}.crt
+        -subj "/CN={{ ssl_ip }}"
+      args:
+        creates: "{{ ssl_cert_path }}/{{ ssl_ip }}.crt"
+
+    - name: Configure Nginx for SSL
+      copy:
+        dest: /etc/nginx/sites-available/default
+        content: |
+          server {
+              listen 80;
+              server_name {{ ssl_ip }};
+              
+              # Redirect all HTTP requests to HTTPS
+              return 301 https://$host$request_uri;
+          }
+
+          server {
+              listen 443 ssl;
+              server_name {{ ssl_ip }};
+
+              ssl_certificate {{ ssl_cert_path }}/{{ ssl_ip }}.crt;
+              ssl_certificate_key {{ ssl_key_path }}/{{ ssl_ip }}.key;
+
+              location / {
+                  root /var/www/html;
+                  index index.html;
+              }
+          }
+      notify: restart nginx
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
