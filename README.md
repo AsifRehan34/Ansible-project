@@ -19,21 +19,14 @@ This guide provides instructions for setting up and configuring servers using An
 1. Update the system repository:
    ```bash
    sudo apt update
-Install Ansible:
-bash
-Copy code
-sudo apt install ansible
-2. Configure Ansible Hosts File
-Open the Ansible hosts file:
-bash
-Copy code
-sudo nano /etc/ansible/hosts
-Define your server groups and IP addresses. For example:
-ini
-Copy code
-[servers]
-server1 ansible_host=your_server_ip1 ansible_user=ubuntu ansible_ssh_private_key_file=/path/to/your/ssh-key.pem
-server2 ansible_host=your_server_ip2 ansible_user=ubuntu ansible_ssh_private_key_file=/path/to/your/ssh-key.pem
+   sudo apt install ansible
+### 2. Configure Ansible Hosts File
+ 1. Open the Ansible hosts file:
+   ```bash
+      sudo nano /etc/ansible/hosts
+2. Define your server groups and IP addresses. For example:
+![image](https://github.com/user-attachments/assets/be7ca4a9-7981-4ede-922f-75b237bd6d4d)
+
 Replace your_server_ip1 and your_server_ip2 with actual server IP addresses.
 Set the appropriate ansible_user and ansible_ssh_private_key_file if needed.
 3. Configure Ansible Configuration File (Optional)
